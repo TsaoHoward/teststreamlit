@@ -214,7 +214,7 @@ if submit_button:
         forecast_prices = {}
         for date in forecast_dates:
             # 查找相同 '編號' 和特定 'Date' 的行
-            matched_rows = df[(df['單價元每坪'] == closest_price_per_ping) & (df['Date'] == date)]
+            matched_rows = df[(df['單價元每坪']*10000 == closest_price_per_ping*10000) & (df['Date'] == date)]
             if not matched_rows.empty:
                 # 假設每個編號和日期只有一行
                 predicted_price = matched_rows.iloc[0]['Predicted']
