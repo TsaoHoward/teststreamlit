@@ -202,7 +202,7 @@ if submit_button:
         closest_row = df.loc[df['distance'].idxmin()]
 
         closest_price_per_ping = closest_row.get('單價元每坪', 0)
-        # closest_ID = closest_row.get('編號', '無編號')
+        closest_ID = closest_row.get('編號', '無編號')
 
         # 假設 newmap.csv 包含 'Predicted', 'Date', 'bad_count_0_1500', 'good_count_0_1500', 'KDE_class' 欄位
         bad_count_0_1500 = closest_row.get('bad_count_0_1500', '無資料')
@@ -210,11 +210,12 @@ if submit_button:
         KDE_class = closest_row.get('KDE_class', '無資料')
 
         # 根據 '編號' 和 'Date' 選擇特定時點的 'Predicted'
-        forecast_dates = ['2024-12', '2025-01', '2025-02']
+        forecast_dates = ['2024-12-01', '2025-01-01', '2025-02-01']
         forecast_prices = {}
+        predicted_price = 200000
         for date in forecast_dates:
             # 查找相同 '編號' 和特定 'Date' 的行
-            matched_rows = df[(df['單價元每坪']*10000 == closest_price_per_ping*10000) & (df['Date'] == date)]
+            matched_rows = df[(df['編號'] == closest_ID) & (df['Date'] == date)]
             if not matched_rows.empty:
                 # 假設每個編號和日期只有一行
                 predicted_price = matched_rows.iloc[0]['Predicted']
@@ -279,7 +280,7 @@ if submit_button:
             # 準備數據
             forecast_df = pd.DataFrame({
                 'Date': list(forecast_prices.keys()),
-                'Predicted': [value / 10 for value in forecast_prices.values()]
+                'Predicted': [value / 10 if isinstance(value, (int, float)) else None for value in forecast_prices.values()]
             })
             # 將 '無資料' 替換為 NaN 以便繪圖
             forecast_df['Predicted'] = pd.to_numeric(forecast_df['Predicted'], errors='coerce')
