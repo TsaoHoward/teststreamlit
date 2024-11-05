@@ -7,6 +7,55 @@ from menu import menu  # 確保您有一個名為 menu 的模塊
 import geopandas as gpd
 from shapely.geometry import Point
 import plotly.express as px
+from sqlalchemy import create_engine
+from shapely import wkt
+
+menu()
+
+# 定義從 MySQL 讀取資料的函數
+def read_mysql_to_geojson(table_name, db_config):
+    """
+    從 MySQL 資料庫讀取指定表格的資料並轉換為 GeoDataFrame。
+
+    :param table_name: 要讀取的 MySQL 表格名稱
+    :param db_config: MySQL 連接配置字典
+    :return: GeoDataFrame 物件
+    """
+    # 建立資料庫引擎
+    engine = create_engine(f"mysql+pymysql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}")
+
+    # 撰寫 SQL 查詢，將幾何欄位轉換為 WKT 格式
+    query = f"SELECT *, ST_AsText(`geometry`) as geom_wkt FROM `{table_name}`;"
+
+    # 使用 pandas 讀取資料
+    df = pd.read_sql(query, engine)
+
+    # 將幾何欄位從 WKT 轉換為 Shapely 幾何物件
+    df['geometry'] = df['geom_wkt'].apply(lambda geom: wkt.loads(geom) if geom else None)
+
+    # 轉換為 GeoDataFrame
+    gdf = gpd.GeoDataFrame(df, geometry='geometry')
+
+    # 設置坐標參考系統（根據您的資料設定 SRID）
+    gdf.set_crs(epsg=4326, inplace=True)  # 假設使用 WGS84
+
+    return gdf
+
+# MySQL 資料庫連接參數
+db_config = {
+    'user': 'bigred',
+    'password': 'bigred',
+    'host': '127.0.0.1',
+    'port': 3306,
+    'database': 'd1'
+}
+
+# 讀取 MySQL 中的 GeoJSON 資料並賦值給 counties
+@st.cache_data(ttl=3600)  # 緩存讀取結果，避免重複查詢
+def load_data_from_mysql():
+    return read_mysql_to_geojson('Tainan_County', db_config=db_config)
+
+counties = load_data_from_mysql()
 
 # 初始化 session state 用於保存點擊的位置和提交的表單數據
 if 'clicked_location' not in st.session_state:
@@ -15,36 +64,19 @@ if 'clicked_location' not in st.session_state:
 if 'submitted_data' not in st.session_state:
     st.session_state.submitted_data = None
 
-# 調用自定義的菜單函數
-menu()
-
-# 使用快取裝飾器來緩存數據加載函數
-@st.cache_data
-def load_geojson(filepath, ttl=3600, show_spinner="正在加載資料..."):
-    try:
-        return gpd.read_file(filepath)
-    except Exception as e:
-        st.error(f"無法加載 GeoJSON 文件: {e}")
-        st.stop()
-
 @st.cache_data
 def load_csv(filepath, ttl=3600, show_spinner="正在加載資料..."):
     try:
         df = pd.read_csv(filepath)
-        # 計算 'good_count_0_1500' 和 'bad_count_0_1500'
-        # df['good_count_0_1500'] = df['good_count_0_500'] + df['good_count_500_1000'] + df['good_count_1000_1500']
-        # df['bad_count_0_1500'] = df['bad_count_0_500'] + df['bad_count_500_1000'] + df['bad_count_0_1500']
-        # # 填補缺失值
-        # df['good_count_0_1500'] = df['good_count_0_1500'].fillna(0)
-        # df['bad_count_0_1500'] = df['bad_count_0_1500'].fillna(0)
         return df[df['交易年份'] >= 2022]
     except Exception as e:
         st.error(f"無法加載地圖數據: {e}")
         st.stop()
 
 # 加載數據（只會在應用啟動時讀取一次）
-counties = load_geojson('data/Tainan_County.geojson')
+# counties = load_geojson('data/Tainan_County.geojson')
 df = load_csv("data/newmap.csv")
+counties = load_data_from_mysql()
 
 # 定義選項
 housetype = ["住商大樓", "公寓", "透天厝", "其他"]
