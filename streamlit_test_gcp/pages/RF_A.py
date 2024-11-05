@@ -45,8 +45,8 @@ def read_mysql_to_geojson(table_name, db_config):
 db_config = {
     'user': 'bigred',
     'password': 'bigred',
-    'host': '192.168.31.42',
-    'port': 30002,
+    'host': '127.0.0.1',
+    'port': 3306,
     'database': 'd1'
 }
 
