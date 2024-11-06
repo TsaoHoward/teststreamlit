@@ -11,10 +11,9 @@ RUN apt-get update && apt-get install -y \
 
 RUN git clone https://github.com/TsaoHoward/teststreamlit.git .
 
-# Change the working directory to streamlit_test
-WORKDIR /app/streamlit_test
-
 RUN pip3 install -r requirements.txt
+
+WORKDIR /app/streamlit_test
 
 EXPOSE 8501
 
