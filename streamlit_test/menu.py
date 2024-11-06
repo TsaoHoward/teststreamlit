@@ -28,4 +28,4 @@ def menu():
     #         st.sidebar.page_link("pages/streamlit_app.py", label="XGboost", icon="🔐")
     st.sidebar.page_link("pages/RF_A.py", label="房價預測")
 #     st.sidebar.page_link("pages/RF_A.py", label="南科園區指標")
-    st.sidebar.image("static/qrcode.png", width=150)
+    st.sidebar.image("static/qrcode.png", width=200)
